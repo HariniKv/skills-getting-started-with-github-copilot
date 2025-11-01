@@ -5,6 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mergington High School Activities</title>
     <link rel="stylesheet" href="styles.css" />
+    <style>
+      .participants-list {
+        list-style: none;
+        padding-left: 0;
+      }
+      .delete-icon {
+        cursor: pointer;
+        color: #c00;
+        margin-left: 8px;
+        font-size: 1em;
+        vertical-align: middle;
+      }
+      .delete-icon:hover {
+        color: #f00;
+      }
+    </style>
   </head>
   <body>
     <header>
@@ -83,7 +99,7 @@
           participantsHeader.innerHTML = `<strong>Participants</strong> <span class="participant-count">(${count})</span>`;
           card.appendChild(participantsHeader);
 
-          // Participants list (bulleted)
+          // Participants list with delete icon
           const ul = document.createElement('ul');
           ul.className = 'participants-list';
           if (count === 0) {
@@ -94,7 +110,31 @@
           } else {
             data.participants.forEach(p => {
               const li = document.createElement('li');
-              li.textContent = p;
+              const spanEmail = document.createElement('span');
+              spanEmail.textContent = p;
+              li.appendChild(spanEmail);
+              const delIcon = document.createElement('span');
+              delIcon.className = 'delete-icon';
+              delIcon.title = 'Remove';
+              delIcon.innerHTML = '&#128465;';
+              delIcon.setAttribute('data-activity', name);
+              delIcon.setAttribute('data-email', p);
+              delIcon.addEventListener('click', async (ev) => {
+                try {
+                  const endpoint = `/activities/${encodeURIComponent(name)}/unregister?email=${encodeURIComponent(p)}`;
+                  const res = await fetch(endpoint, { method: 'POST' });
+                  if (!res.ok) {
+                    const err = await res.json().catch(() => ({ detail: 'Unregister failed' }));
+                    throw new Error(err.detail || 'Unregister failed');
+                  }
+                  const result = await res.json();
+                  showMessage(result.message || 'Participant removed', 'success');
+                  await loadActivities();
+                } catch (err) {
+                  showMessage(err.message || 'Unregister failed', 'error');
+                }
+              });
+              li.appendChild(delIcon);
               ul.appendChild(li);
             });
           }
